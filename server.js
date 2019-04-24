@@ -1,50 +1,28 @@
-var express = require('express');
-var app = express();
-var bodyParser =  require('body-parser'); //парсит тело запроса  и в request body записывает, что мы передали
-var mongoose = require('mongoose');
-var ObjectID = mongoose.Types.ObjectId;
+const express = require('express');
+//import express from 'express';
+const app = express();
+const bodyParser =  require('body-parser'); //парсит тело запроса  и в request body записывает, что мы передали
+//import bodyParser from 'body-parser';
+const mongoose = require('mongoose');
+//import mongoose from 'mongoose';
+const ObjectID = mongoose.Types.ObjectId;
+const productController = require('./controllers/product')
+
 var db;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
-var products = [
-    {
-        id:1,
-        name: 'Ariel 1L'
-    },
-    {
-        id:2,
-        name: 'Tide 2L'
-    },
-    {
-        id:3,
-        name:'Lenor 2.5L'
-    },
-    {
-        id:4,
-        name:'Gillette Bazaru Net'
-    },
-    {
-        id:5,
-        name:'Old Spice'
-    },
-    {
-        id:6,
-        name:'Lenor 3L'
-    },
-]; 
-
-app.get('/', function(req, res){
+app.get('/', (req, res) => {
     res.send('home page api');
 });
 
-app.post('/product', function (req, res){
-    var product = { 
+app.post('/product', (req, res) => {
+    const product = { 
         name: req.body.name
     }; 
     db.collection('products').insert(product, 
-        function(err, result){
+        (err, result) => {
             if(err){
                 console.log(err);
                 return res.sendStatus(500);
@@ -53,9 +31,9 @@ app.post('/product', function (req, res){
     });
 });
 
-app.get('/product', function (req, res){
+app.get('/product', (req, res) => {
     //res.send(products);
-    db.collection('products').find().toArray(function(err, docs){
+    db.collection('products').find().toArray( (err, docs) => {
             if (err){
                 console.log(err);
                 return res.sendStatus(500);
@@ -64,9 +42,9 @@ app.get('/product', function (req, res){
     })
 });
 
-app.get('/product/:id', function(req, res){
+app.get('/product/:id', (req, res) => {
     db.collection('products').findOne({_id: ObjectID(req.params.id)}, 
-        function(err, doc){
+        (err, doc) => {
             if(err){
                 console.log(err);
                 return res.sendStatus(500);
@@ -75,31 +53,39 @@ app.get('/product/:id', function(req, res){
     });
 });
 
-app.put('/product/:id', function(req, res){
-    var product = products.find(
-        function(product){
-            return product.id === Number(req.params.id);
-    });
-    product.name = req.body.name;
-    res.send(product);
+app.put('/product/:id', (req, res) => {
+    db.collection('products').replaceOne(
+        {_id: ObjectID(req.params.id) },
+        {$set: { name: req.body.name } },
+        (err, result) => {
+            if(err){
+                console.log(err);
+                return res.sendStatus(500);
+            }
+            res.sendStatus(200);
+        }
+    )
 });
 
-app.delete('/product/:id', function(req, res){
-    products = products.filter( 
-        function(product){
-            return product.id !== Number(req.params.id);
-        });
-    res.sendStatus(200);
+app.delete('/product/:id', (req, res) => {
+    db.collection('products').deleteOne(
+        {_id: ObjectID(req.params.id)},
+        (err, result) => {
+            if (err){
+                console.log(err);
+                return res.sendStatus(500);
+            }
+            return res.sendStatus(200);
+        }
+    )
+
 })
 
-mongoose.connect("mongodb://localhost:27017/api", { useNewUrlParser: true }, function(err, database) {
-    if (err) {
-        return console.log(err);
-    }
+mongoose.connect("mongodb://localhost:27017/api", { useNewUrlParser: true }, (err, database) => {
+    if (err) { return console.log(err);}
     db = database;
-    app.listen(3003,function () {
-        console.log('api started, connection w/ db success')
-    })
+    const port = 3003;
+    app.listen(port, () => console.log(`api started, connection w/ db success on port ${port}`))
 });
 
 
