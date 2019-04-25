@@ -1,12 +1,8 @@
-const express = require('express');
-//import express from 'express';
-const app = express();
-const bodyParser =  require('body-parser'); //парсит тело запроса  и в request body записывает, что мы передали
-//import bodyParser from 'body-parser';
-const mongoose = require('mongoose');
-//import mongoose from 'mongoose';
-const ObjectID = mongoose.Types.ObjectId;
-const productController = require('./controllers/product')
+import express from 'express';
+const app = express(); 
+import bodyParser from 'body-parser'; 
+import mongoose from 'mongoose';
+const ObjectID = mongoose.Types.ObjectId; 
 
 var db;
 
@@ -19,7 +15,11 @@ app.get('/', (req, res) => {
 
 app.post('/product', (req, res) => {
     const product = { 
-        name: req.body.name
+        name: req.body.name,
+        price: req.body.price,
+        category: req.body.category,
+        cashback: req.body.cashback,
+        barcode: req.body.barcode
     }; 
     db.collection('products').insert(product, 
         (err, result) => {
@@ -31,8 +31,7 @@ app.post('/product', (req, res) => {
     });
 });
 
-app.get('/product', (req, res) => {
-    //res.send(products);
+app.get('/product', (req, res) => { 
     db.collection('products').find().toArray( (err, docs) => {
             if (err){
                 console.log(err);
@@ -56,7 +55,14 @@ app.get('/product/:id', (req, res) => {
 app.put('/product/:id', (req, res) => {
     db.collection('products').replaceOne(
         {_id: ObjectID(req.params.id) },
-        {$set: { name: req.body.name } },
+        {$set: { 
+            name: req.body.name,
+            price: req.body.price,
+            category: req.body.category,
+            cashback: req.body.cashback,
+            barcode: req.body.barcode 
+        } 
+        },         
         (err, result) => {
             if(err){
                 console.log(err);
