@@ -1,19 +1,68 @@
 import express from 'express';
-const app = express(); 
-import bodyParser from 'body-parser'; 
+import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
-const ObjectID = mongoose.Types.ObjectId; 
+import passport from 'passport';
+//import BasicStrategy from 'passport-http'.BasicStrategy;
 
+const BasicStrategy = require('passport-http').BasicStrategy;
+const app = express(); 
+const ObjectID = mongoose.Types.ObjectId; 
 var db;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
-app.get('/', (req, res) => {
+passport.use(new BasicStrategy((username, password, done) => {
+    User.findOne({username: username, password: password}, (err, user) => {
+        if (err) { return done(err); }
+        if (!user) { return done(null, false); }
+        return done(null, user);
+    })
+}));
+
+const User = mongoose.model('User', {
+    username: {type: String, unique: true},
+    password: String
+});
+
+app.get('/users/me',
+    passport.authenticate('basic', { session: false }),
+    (req, res) => {
+    
+    let userId = req.user._id;
+    
+    User.findOne({_id: userId}, (err, user) => {
+        if (err)
+            return res.json({status: 'error', data: err});
+
+        return res.json({status: 'ok', data: user})
+    })
+});
+
+app.post('/users/register',
+    (req, res) => {
+    let username = req.body.username;
+    let password = req.body.password;
+    
+    if (!username || !password)
+        return res.json({status: 'error', data: 'Invalid params'});
+
+    User.create({username: username, password: password}, (err, user) => {
+        if (err)
+            return res.json({status: 'error', data: err});
+
+        return res.json({status: 'ok'})
+    })
+});
+
+
+app.get('/', passport.authenticate('basic', { session: false }),
+    (req, res) => {
     res.send('home page api');
 });
 
-app.post('/product', (req, res) => {
+app.post('/product', passport.authenticate('basic', { session: false }),
+    (req, res) => {
     const product = { 
         name: req.body.name,
         price: req.body.price,
@@ -31,7 +80,8 @@ app.post('/product', (req, res) => {
     });
 });
 
-app.get('/product', (req, res) => { 
+app.get('/product', passport.authenticate('basic', { session: false }),
+    (req, res) => { 
     db.collection('products').find().toArray( (err, docs) => {
             if (err){
                 console.log(err);
@@ -41,7 +91,8 @@ app.get('/product', (req, res) => {
     })
 });
 
-app.get('/product/:id', (req, res) => {
+app.get('/product/:id', passport.authenticate('basic', { session: false }),
+    (req, res) => {
     db.collection('products').findOne({_id: ObjectID(req.params.id)}, 
         (err, doc) => {
             if(err){
@@ -52,7 +103,8 @@ app.get('/product/:id', (req, res) => {
     });
 });
 
-app.put('/product/:id', (req, res) => {
+app.put('/product/:id', passport.authenticate('basic', { session: false }),
+    (req, res) => {
     db.collection('products').replaceOne(
         {_id: ObjectID(req.params.id) },
         {$set: { 
@@ -73,7 +125,8 @@ app.put('/product/:id', (req, res) => {
     )
 });
 
-app.delete('/product/:id', (req, res) => {
+app.delete('/product/:id', passport.authenticate('basic', { session: false }),
+    (req, res) => {
     db.collection('products').deleteOne(
         {_id: ObjectID(req.params.id)},
         (err, result) => {
